@@ -1,0 +1,70 @@
+asyncapi: '2.1.0'
+info:
+  title: Websocket API
+  version: 1.0.0
+  description: '|> @event: Юзер заходить на вкладку Play -> client@send(connect) -> server@on{connect}(game:start) <| ... |> @event: Юзер заматчив слово -> client@send(game:match) -> server@on<game:match>([game:match:success, game:match:failed]) <]'
+channels:
+  client@connect:
+    publish:
+      message:
+        $ref: '#/components/messages/connect'
+  server@connect:
+    subscribe:
+      message:
+        $ref: '#/components/messages/game:start'
+  client@game:match:
+    publish:
+      message:
+        $ref: '#/components/messages/game:match'
+  server@game:match:
+    subscribe:
+      message:
+        $ref: '#/components/messages/game:match:#result'
+  server@game:end:
+    subscribe:
+      message:
+        $ref: '#/components/messages/game:end'
+components:
+  messages:
+    connect:
+      payload:
+        type: "null"
+    game:start:
+      payload:
+        type: "object"
+        properties:
+          rows:
+            description: char[8][8] - map of letters
+          theme:
+            type: string 
+          players:
+            type: "object"
+            description: Dictionary<string @gameUserId, string @animationId>
+
+    game:match:
+      payload:
+        type: "object"
+        properties:
+          userId:
+            type: string
+          match: 
+            type: array
+            description: array of letter's indexes in gameField in user match order 
+            items:
+              type: number
+    game:match:#result:
+      tags:
+        - name: result is "success" / "failed" depended on is user match success or not
+      payload:
+        type: "object"
+        properties:
+          gameUserId:
+            type: "string"
+            description: if \#result = success. @broadcast
+
+    game:end:
+      description: send@ when all words are matched / game timer
+      payload:
+        type: ["string", "null"]
+        description: won user id / null if tie
+        
